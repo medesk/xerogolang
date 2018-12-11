@@ -84,6 +84,9 @@ func (p *Provider) newPublicConsumer(authURL string) *oauth.Consumer {
 //newPartnerConsumer creates a consumer capable of communicating with a Partner application: https://developer.xero.com/documentation/auth-and-limits/partner-applications
 func (p *Provider) newPrivateOrPartnerConsumer(authURL string) (*oauth.Consumer, error) {
 	block, _ := pem.Decode([]byte(p.PrivateKey))
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode private key")
+	}
 
 	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
