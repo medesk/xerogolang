@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -83,12 +82,12 @@ func (p *Provider) newPublicConsumer(authURL string) *oauth.Consumer {
 }
 
 //newPartnerConsumer creates a consumer capable of communicating with a Partner application: https://developer.xero.com/documentation/auth-and-limits/partner-applications
-func (p *Provider) newPrivateOrPartnerConsumer(authURL string) *oauth.Consumer {
+func (p *Provider) newPrivateOrPartnerConsumer(authURL string) (*oauth.Consumer, error) {
 	block, _ := pem.Decode([]byte(p.PrivateKey))
 
 	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to parse private key: %s", err)
 	}
 
 	var c *oauth.Consumer
@@ -117,7 +116,7 @@ func (p *Provider) newPrivateOrPartnerConsumer(authURL string) *oauth.Consumer {
 
 	c.Debug(p.debug)
 
-	return c
+	return c, nil
 }
 
 // New creates a new Xero provider, and sets up important connection details.
@@ -180,7 +179,9 @@ func (p *Provider) Debug(debug bool) {
 // Xero does not support the "state" variable.
 func (p *Provider) BeginAuth(state string) (goth.Session, error) {
 	if p.consumer == nil {
-		p.initConsumer()
+		if err := p.initConsumer(); err != nil {
+			return nil, err
+		}
 	}
 
 	if p.Method == "private" {
@@ -212,7 +213,9 @@ func (p *Provider) processRequest(request *http.Request, session goth.Session, a
 	sess := session.(*Session)
 
 	if p.consumer == nil {
-		p.initConsumer()
+		if err := p.initConsumer(); err != nil {
+			return nil, err
+		}
 	}
 
 	if sess.AccessToken == nil {
@@ -378,7 +381,9 @@ func (p *Provider) FetchUser(session goth.Session) (goth.User, error) {
 //RefreshOAuth1Token should be used instead of RefeshToken which is not compliant with the Oauth1.0a standard
 func (p *Provider) RefreshOAuth1Token(session *Session) error {
 	if p.consumer == nil {
-		p.initConsumer()
+		if err := p.initConsumer(); err != nil {
+			return err
+		}
 	}
 	if session.AccessToken == nil {
 		return fmt.Errorf("Could not refresh token as last valid accessToken was not found")
@@ -431,15 +436,18 @@ func (p *Provider) GetSessionFromStore(request *http.Request, response http.Resp
 	return session, err
 }
 
-func (p *Provider) initConsumer() {
+func (p *Provider) initConsumer() error {
+	var err error
 	switch p.Method {
 	case "private":
-		p.consumer = p.newPrivateOrPartnerConsumer(authorizeURL)
+		p.consumer, err = p.newPrivateOrPartnerConsumer(authorizeURL)
 	case "public":
 		p.consumer = p.newPublicConsumer(authorizeURL)
 	case "partner":
-		p.consumer = p.newPrivateOrPartnerConsumer(authorizeURL)
+		p.consumer, err = p.newPrivateOrPartnerConsumer(authorizeURL)
 	default:
 		p.consumer = p.newPublicConsumer(authorizeURL)
 	}
+
+	return err
 }
