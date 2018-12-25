@@ -24,7 +24,7 @@ type TaxRate struct {
 	Status string `json:"Status,omitempty" xml:"Status,omitempty"`
 
 	// See ReportTaxTypes
-	ReportTaxType string `json:"ReportTaxType" xml:"ReportTaxType"`
+	ReportTaxType string `json:"ReportTaxType,omitempty" xml:"ReportTaxType,omitempty"`
 
 	// Boolean to describe if tax rate can be used for asset accounts i.e. true,false
 	CanApplyToAssets bool `json:"CanApplyToAssets,omitempty" xml:"CanApplyToAssets,omitempty"`
