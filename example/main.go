@@ -10,9 +10,9 @@ import (
 
 	"math"
 
-	"github.com/XeroAPI/xerogolang"
-	"github.com/XeroAPI/xerogolang/accounting"
-	"github.com/XeroAPI/xerogolang/auth"
+	"github.com/medesk/xerogolang"
+	"github.com/medesk/xerogolang/accounting"
+	"github.com/medesk/xerogolang/auth"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/markbates/goth"
