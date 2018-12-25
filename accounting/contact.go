@@ -5,9 +5,9 @@ import (
 	"encoding/xml"
 	"time"
 
+	"github.com/markbates/goth"
 	"github.com/medesk/xerogolang"
 	"github.com/medesk/xerogolang/helpers"
-	"github.com/markbates/goth"
 )
 
 //Contact is a debtor/customer or creditor/supplier in a Xero Organisation
@@ -104,7 +104,7 @@ type Contact struct {
 	BatchPayments BatchPayment `json:"BatchPayments,omitempty" xml:"-"`
 
 	// The default discount rate for the contact (read only)
-	Discount float32 `json:"Discount,omitempty" xml:"-"`
+	Discount float64 `json:"Discount,omitempty" xml:"-"`
 
 	// The raw AccountsReceivable(sales Contacts) and AccountsPayable(bills) outstanding and overdue amounts, not converted to base currency (read only)
 	Balances Balances `json:"Balances,omitempty" xml:"-"`
@@ -128,8 +128,8 @@ type Balances struct {
 //Balance is the raw AccountsReceivable(sales invoices) and AccountsPayable(bills)
 //outstanding and overdue amounts, not converted to base currency
 type Balance struct {
-	Outstanding float32 `json:"Outstanding,omitempty" xml:"Outstanding,omitempty"`
-	Overdue     float32 `json:"Overdue,omitempty" xml:"Overdue,omitempty"`
+	Outstanding float64 `json:"Outstanding,omitempty" xml:"Outstanding,omitempty"`
+	Overdue     float64 `json:"Overdue,omitempty" xml:"Overdue,omitempty"`
 }
 
 //The Xero API returns Dates based on the .Net JSON date format available at the time of development

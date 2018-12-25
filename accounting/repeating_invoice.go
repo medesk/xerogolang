@@ -3,9 +3,9 @@ package accounting
 import (
 	"encoding/json"
 
+	"github.com/markbates/goth"
 	"github.com/medesk/xerogolang"
 	"github.com/medesk/xerogolang/helpers"
-	"github.com/markbates/goth"
 )
 
 //RepeatingInvoice a template for the invoices you send and bills you receive regularly
@@ -36,13 +36,13 @@ type RepeatingInvoice struct {
 	Status string `json:"Status,omitempty" xml:"Status,omitempty"`
 
 	// Total of invoice excluding taxes
-	SubTotal float32 `json:"SubTotal,omitempty" xml:"SubTotal,omitempty"`
+	SubTotal float64 `json:"SubTotal,omitempty" xml:"SubTotal,omitempty"`
 
 	// Total tax on invoice
-	TotalTax float32 `json:"TotalTax,omitempty" xml:"TotalTax,omitempty"`
+	TotalTax float64 `json:"TotalTax,omitempty" xml:"TotalTax,omitempty"`
 
 	// Total of Invoice tax inclusive (i.e. SubTotal + TotalTax)
-	Total float32 `json:"Total,omitempty" xml:"Total,omitempty"`
+	Total float64 `json:"Total,omitempty" xml:"Total,omitempty"`
 
 	// Xero generated unique identifier for repeating invoice template
 	RepeatingInvoiceID string `json:"RepeatingInvoiceID,omitempty" xml:"RepeatingInvoiceID,omitempty"`
