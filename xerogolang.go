@@ -16,9 +16,9 @@ import (
 
 	"crypto"
 
+	"github.com/markbates/goth"
 	"github.com/medesk/xerogolang/auth"
 	"github.com/medesk/xerogolang/helpers"
-	"github.com/markbates/goth"
 	"github.com/mrjones/oauth"
 	"golang.org/x/oauth2"
 )
@@ -137,6 +137,30 @@ func New(clientKey, secret, callbackURL string) *Provider {
 		Method:          os.Getenv("XERO_METHOD"),
 		PrivateKey:      helpers.ReadPrivateKeyFromPath(privateKeyFilePath),
 		UserAgentString: userAgentString,
+		providerName:    "xero",
+	}
+	return p
+}
+
+// NewPrivate creates custom Xero provider with method "private" and given private key
+func NewPrivate(
+	clientKey string,
+	secret string,
+	callbackURL string,
+	privateKey string,
+	userAgent string,
+) *Provider {
+	p := &Provider{
+		ClientKey:   clientKey,
+		Secret:      secret,
+		CallbackURL: callbackURL,
+		//Method determines how you will connect to Xero.
+		//Options are public, private, and partner
+		//Use public if this is your first time.
+		//More details here: https://developer.xero.com/documentation/getting-started/api-application-types
+		Method:          "private",
+		PrivateKey:      privateKey,
+		UserAgentString: fmt.Sprintf("%s (xerogolang 0.1.2) %s", userAgent, clientKey),
 		providerName:    "xero",
 	}
 	return p
