@@ -48,6 +48,10 @@ type Provider struct {
 	debug           bool
 	consumer        *oauth.Consumer
 	providerName    string
+	// properties for OAuth2.0 provider
+	isOAuth2    bool
+	accessToken string
+	tenantID    string
 }
 
 //newPublicConsumer creates a consumer capable of communicating with a Public application: https://developer.xero.com/documentation/auth-and-limits/public-applications
@@ -191,6 +195,21 @@ func NewPrivate(
 	return p
 }
 
+// NewOAuth2 creates custom Xero provider that'll use new OAuth 2.0 access tokens.
+func NewOAuth2(accessToken string, tenantID string) *Provider {
+	httpClient := &http.Client{
+		Transport: http.DefaultTransport,
+		Timeout:   15 * time.Second,
+	}
+
+	return &Provider{
+		HTTPClient:  httpClient,
+		isOAuth2:    true,
+		accessToken: accessToken,
+		tenantID:    tenantID,
+	}
+}
+
 // New creates a new Xero provider, with a custom http client
 func NewCustomHTTPClient(clientKey, secret, callbackURL string, httpClient *http.Client) *Provider {
 	p := &Provider{
@@ -262,20 +281,6 @@ func (p *Provider) BeginAuth(state string) (goth.Session, error) {
 
 //processRequest processes a request prior to it being sent to the API
 func (p *Provider) processRequest(request *http.Request, session goth.Session, additionalHeaders map[string]string) ([]byte, error) {
-	sess := session.(*Session)
-
-	if p.consumer == nil {
-		if err := p.initConsumer(); err != nil {
-			return nil, err
-		}
-	}
-
-	if sess.AccessToken == nil {
-		// data is not yet retrieved since accessToken is still empty
-		return nil, fmt.Errorf("%s cannot process request without accessToken", p.providerName)
-	}
-
-	request.Header.Add("User-Agent", p.UserAgentString)
 	for key, value := range additionalHeaders {
 		request.Header.Add(key, value)
 	}
@@ -283,17 +288,10 @@ func (p *Provider) processRequest(request *http.Request, session goth.Session, a
 	var err error
 	var response *http.Response
 
-	if p.HTTPClient == nil {
-
-		client, _ := p.consumer.MakeHttpClient(sess.AccessToken)
-
-		response, err = client.Do(request)
-
+	if p.isOAuth2 {
+		response, err = p.processRequestOAuth2(request)
 	} else {
-
-		transport, _ := p.consumer.MakeRoundTripper(sess.AccessToken)
-
-		response, err = transport.RoundTrip(request)
+		response, err = p.processRequestOAuth1(request, session)
 	}
 
 	if err != nil {
@@ -316,6 +314,40 @@ func (p *Provider) processRequest(request *http.Request, session goth.Session, a
 		return nil, fmt.Errorf("Received no response: %s", err.Error())
 	}
 	return responseBytes, nil
+}
+
+func (p *Provider) processRequestOAuth1(request *http.Request, session goth.Session) (*http.Response, error) {
+	sess := session.(*Session)
+
+	if p.consumer == nil {
+		if err := p.initConsumer(); err != nil {
+			return nil, err
+		}
+	}
+
+	if sess.AccessToken == nil {
+		// data is not yet retrieved since accessToken is still empty
+		return nil, fmt.Errorf("%s cannot process request without accessToken", p.providerName)
+	}
+
+	request.Header.Add("User-Agent", p.UserAgentString)
+
+	if p.HTTPClient == nil {
+		client, _ := p.consumer.MakeHttpClient(sess.AccessToken)
+
+		return client.Do(request)
+	}
+
+	transport, _ := p.consumer.MakeRoundTripper(sess.AccessToken)
+
+	return transport.RoundTrip(request)
+}
+
+func (p *Provider) processRequestOAuth2(request *http.Request) (*http.Response, error) {
+	request.Header.Add("Authorization", "Bearer "+p.accessToken)
+	request.Header.Add("xero-tenant-id", p.tenantID)
+
+	return p.HTTPClient.Do(request)
 }
 
 //Find retrieves the requested data from an endpoint to be unmarshaled into the appropriate data type
