@@ -29,7 +29,7 @@ var (
 	tokenURL        = "https://api.xero.com/oauth/AccessToken"
 	endpointProfile = "https://api.xero.com/api.xro/2.0/"
 	//userAgentString should match the name of your Application
-	userAgentString = os.Getenv("XERO_USER_AGENT") + " (xerogolang 0.1.2) " + os.Getenv("XERO_KEY")
+	userAgentString = os.Getenv("XERO_USER_AGENT") + " (xerogolang 0.1.3) " + os.Getenv("XERO_KEY")
 	//privateKeyFilePath is a file path to your .pem private/public key file
 	//You only need this for private and partner Applications
 	//more details here: https://developer.xero.com/documentation/api-guides/create-publicprivate-key
@@ -142,6 +142,31 @@ func New(clientKey, secret, callbackURL string) *Provider {
 	return p
 }
 
+// NewNoEnviro creates a new Xero provider without using the environmental set variables
+// , and sets up important connection details.
+// You should always call `xero.New` to get a new Provider. Never try to create
+// one manually.
+func NewNoEnviro(clientKey, secret, callbackURL, userAgent, xeroMethod string, privateKey []byte) *Provider {
+	// Set variables without using the environment
+	userAgentString = userAgent + " (xerogolang 0.1.3) " + clientKey
+	privateKeyFilePath = ""
+
+	p := &Provider{
+		ClientKey:   clientKey,
+		Secret:      secret,
+		CallbackURL: callbackURL,
+		//Method determines how you will connect to Xero.
+		//Options are public, private, and partner
+		//Use public if this is your first time.
+		//More details here: https://developer.xero.com/documentation/getting-started/api-application-types
+		Method:          xeroMethod,
+		PrivateKey:      string(privateKey),
+		UserAgentString: userAgentString,
+		providerName:    "xero",
+	}
+	return p
+}
+
 // NewPrivate creates custom Xero provider with method "private" and given private key
 func NewPrivate(
 	clientKey string,
@@ -160,7 +185,7 @@ func NewPrivate(
 		//More details here: https://developer.xero.com/documentation/getting-started/api-application-types
 		Method:          "private",
 		PrivateKey:      privateKey,
-		UserAgentString: fmt.Sprintf("%s (xerogolang 0.1.2) %s", userAgent, clientKey),
+		UserAgentString: fmt.Sprintf("%s (xerogolang 0.1.3) %s", userAgent, clientKey),
 		providerName:    "xero",
 	}
 	return p
@@ -279,8 +304,6 @@ func (p *Provider) processRequest(request *http.Request, session goth.Session, a
 
 	if response.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf(
-			"%d error trying to find information.\n\nResponse:\n%s",
-			response.StatusCode,
 			helpers.ReaderToString(response.Body),
 		)
 	}
