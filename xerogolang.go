@@ -343,6 +343,7 @@ func (p *Provider) processRequestOAuth1(request *http.Request, session goth.Sess
 	return transport.RoundTrip(request)
 }
 
+// See https://developer.xero.com/documentation/oauth2/auth-flow for more details.
 func (p *Provider) processRequestOAuth2(request *http.Request) (*http.Response, error) {
 	request.Header.Add("Authorization", "Bearer "+p.accessToken)
 	request.Header.Add("xero-tenant-id", p.tenantID)
