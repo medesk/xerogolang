@@ -15,6 +15,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	accessToken = "accessToken"
+	tenantID    = "tenantID"
+)
+
 func Test_New(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
@@ -23,6 +28,17 @@ func Test_New(t *testing.T) {
 	a.Equal(provider.ClientKey, os.Getenv("XERO_KEY"))
 	a.Equal(provider.Secret, os.Getenv("XERO_SECRET"))
 	a.Equal(provider.CallbackURL, "/foo")
+}
+
+func Test_NewOAuth2(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	provider := NewOAuth2(accessToken, tenantID)
+	a.True(provider.isOAuth2)
+	a.Equal(accessToken, provider.accessToken)
+	a.Equal(tenantID, provider.tenantID)
+	a.NotNil(provider.HTTPClient)
 }
 
 func Test_Implements_Provider(t *testing.T) {
@@ -119,6 +135,30 @@ func Test_Find(t *testing.T) {
 		a.Equal("ACTIVE", testResponse.Tests[0].Status)
 	})
 
+	mockXero(func(ts *httptest.Server) {
+		provider := NewOAuth2(accessToken, tenantID)
+
+		additionalHeaders := map[string]string{
+			"Accept": "application/json",
+		}
+
+		response, err := provider.Find(nil, "TrackingCategories", additionalHeaders, nil)
+		if err != nil {
+			a.Error(err, nil)
+		}
+
+		var testResponse *Tests
+		err = json.Unmarshal(response, &testResponse)
+		if err != nil {
+			a.Error(err, nil)
+		}
+
+		a.NoError(err)
+
+		a.Equal("Store", testResponse.Tests[0].Name)
+		a.Equal("111-111", testResponse.Tests[0].TrackingCategoryID)
+		a.Equal("ACTIVE", testResponse.Tests[0].Status)
+	})
 }
 
 func Test_Create(t *testing.T) {
